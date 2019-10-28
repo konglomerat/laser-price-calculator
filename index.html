@@ -1,0 +1,131 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title>Laser Rechner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script>
+  <!-- Place favicon.ico in the root directory -->
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/main.css">
+
+  <meta name="theme-color" content="#fafafa">
+</head>
+
+<body>
+  <div id="laser" style="border: 1px solid grey; padding: 10px;">
+    Mitglied: <input id="laser_is-member" type="checkbox"/> | kommerziell: <input id="laser_is-commercial" type="checkbox"/> | Minuten: <input id="laser_minutes" type="text"/><br/>
+    Preis: <span id="laser_price" style="font-size: 24px;"></span>
+</div>
+    
+<script type="text/javascript">
+  function calculate(isCommercial, isMember, minutes) {
+    var price = Laserkosten(isCommercial, isMember, minutes);
+    var brutto = price[0];
+
+    if(brutto && !isNaN(brutto)) {
+      document.getElementById("laser_price").textContent = brutto.toFixed(2) + "€";
+    } else {
+      document.getElementById("laser_price").textContent = "";
+    }
+  }
+
+  window.setInterval(function () {
+    calculate(
+      document.getElementById("laser_is-commercial").checked,
+      document.getElementById("laser_is-member").checked,
+      document.getElementById("laser_minutes").value
+    );
+  }, 500)
+
+  function price_privat_member_function(time) {
+    // Bruttopreis
+    return 25*(1-Math.exp(-1*time/50))+0.3*time;
+  }
+
+  function price_privat_nonmeber_function(time) {
+    // Bruttopreis
+    return 49*(1-Math.exp(-1*time/70))+0.5*time;
+  }
+
+  function price_business_member_function(time) {
+    // Nettopreis
+    return (25*(1-Math.exp(-1*time/50))+0.3*time);
+  }
+
+  function price_business_nonmeber_function(time) {
+    // Nettopreis
+    return (49*(1-Math.exp(-1*time/70))+0.5*time);
+  }
+
+  var tax_business = 0.19;
+  var tax_privat = 0.07;
+
+  /**
+   * Erstellt den Text vor der MwSt. in Abhängigkeit des Firma-Felds. 
+   * "davon X% MwSt."
+   * @param {string} isCommercial Firma-Feld
+   * @customfunction
+   */
+  function tax_text(isCommercial) {
+    if (isCommercial == "") {
+      return "davon "+ Math.round(tax_privat * 100) + "% MwSt.";
+    }
+    else {
+      return "davon "+ Math.round(tax_business * 100) + "% MwSt.";
+    }
+  }
+
+
+  /**
+   * Berechnet die Kosten am Lasercutter
+   *
+   * @param {string} purpose "Privat" oder "Betrieblich".
+   * @param {string} isMember "Vereinsmitglied" oder "Kein Mitglied".
+   * @param {number} time Laserdauer.
+   * @return Preis in €.
+   * @customfunction
+   */
+  function Laserkosten(isCommercial, isMember, time) {
+    if (!isCommercial) {
+      if (isMember) {
+        var price_brutto = price_privat_member_function(time);
+        var price_netto = price_brutto/(1+tax_privat);
+        var tax = price_brutto - price_netto;
+        return [price_brutto, tax];
+        
+      } else {
+        var price_brutto = price_privat_nonmeber_function(time);
+        var price_netto = price_brutto/(1+tax_privat);
+        var tax = price_brutto - price_netto;
+        return [price_brutto, tax];
+      }
+      
+    } else {
+      if (isMember) {
+        var price_netto = price_business_member_function(time);
+        var price_brutto = price_netto * (1 + tax_business);
+        var tax = price_netto * tax_business;
+        return [price_brutto, tax];
+        
+      } else {
+        var price_netto = price_business_nonmeber_function(time);
+        var price_brutto = price_netto * (1 + tax_business);
+        var tax = price_netto * tax_business;
+        return [price_brutto, tax];
+        
+      }
+    }
+    
+    return 0;
+  }
+</script>
+
+</body>
+
+</html>
